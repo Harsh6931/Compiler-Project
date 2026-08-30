@@ -10,6 +10,8 @@ add_executable(lumen
     src/lexer/lexer.cpp
     src/parser/parser.cpp
     src/ast/ast_printer.cpp
+    src/interpreter/environment.cpp
+    src/interpreter/interpreter.cpp
 )
 
 target_include_directories(lumen PRIVATE src)
