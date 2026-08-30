@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(lumen
     src/main.cpp
+    src/lexer/lexer.cpp
 )
 
-target_include_directories(lumen PRIVATE include)
+target_include_directories(lumen PRIVATE src)
