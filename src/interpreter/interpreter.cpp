@@ -20,19 +20,19 @@ void Interpreter::interpret(const Program& program) {
 
 void Interpreter::execute(const Stmt& stmt) {
     if (auto* s = dynamic_cast<const ExprStmt*>(&stmt)) {
-        evaluate(*s->expression);
+        evaluate(*s->expression); // evaluate the expression and ignore the result
         return;
     }
 
     if (auto* s = dynamic_cast<const PrintStmt*>(&stmt)) {
-        Value value = evaluate(*s->expression);
+        Value value = evaluate(*s->expression); // evaluate the expression and get the result
         std::cout << value.toString() << "\n";
         return;
     }
 
     if (auto* s = dynamic_cast<const VarDeclStmt*>(&stmt)) {
         Value value = evaluate(*s->initializer);
-        environment->define(s->name, value);
+        environment->define(s->name, value); // define the variable in the environment
         return;
     }
 
@@ -42,10 +42,10 @@ void Interpreter::execute(const Stmt& stmt) {
     }
 
     if (auto* s = dynamic_cast<const IfStmt*>(&stmt)) {
-        if (evaluate(*s->condition).isTruthy()) {
+        if (evaluate(*s->condition).isTruthy()) { // evaluate the condition and check if it is true
             execute(*s->thenBranch);
         } else if (s->elseBranch) {
-            execute(*s->elseBranch);
+            execute(*s->elseBranch); 
         }
         return;
     }
