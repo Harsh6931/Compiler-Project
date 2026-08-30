@@ -8,6 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(lumen
     src/main.cpp
     src/lexer/lexer.cpp
+    src/parser/parser.cpp
+    src/ast/ast_printer.cpp
 )
 
 target_include_directories(lumen PRIVATE src)

@@ -1,6 +1,9 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -Isrc
-SRC      := src/main.cpp src/lexer/lexer.cpp
+SRC      := src/main.cpp \
+           src/lexer/lexer.cpp \
+           src/parser/parser.cpp \
+           src/ast/ast_printer.cpp
 TARGET   := lumen
 
 .PHONY: all clean run

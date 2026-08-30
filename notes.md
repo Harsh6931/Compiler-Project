@@ -82,6 +82,8 @@ Distinguishes from .c, .py, .js.
 # STAGE 1: LEXICAL ANALYSIS (convert source code into tokens) -TOKENIZATION()
 
 # STAGE 2: SYNTAX ANALYSIS (Parsing)
+GOAL = convert PARSE Tokens -> AST
+
 AST =  Abstract Syntax Tree.
 
 What it is: Tree structure representing your code's grammar. Nodes = operations/constructs. Children = operands/parts.
