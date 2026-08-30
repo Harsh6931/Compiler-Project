@@ -1,0 +1,12 @@
+// Variables, strings, and booleans
+let name = "Lumen";
+let version = 1;
+let ready = true;
+
+print name;
+print version;
+print ready;
+
+// Reassignment
+version = 2;
+print version;

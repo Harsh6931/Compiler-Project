@@ -1,0 +1,12 @@
+// Arithmetic and operator precedence
+// Expected: 50
+let a = 10;
+let b = 20;
+let c = a + b * 2;
+print c;
+
+// Expected: 21
+print (1 + 2) * 7;
+
+// Expected: -5
+print -10 + 5;

@@ -1,0 +1,24 @@
+// Comparisons and logical operators
+let x = 10;
+let y = 20;
+
+// Expected: true
+print x < y;
+// Expected: false
+print x == y;
+// Expected: true
+print x != y;
+// Expected: true
+print x <= 10;
+// Expected: true
+print y >= 20;
+
+// Logical ops (short-circuit)
+// Expected: true
+print true && true;
+// Expected: false
+print true && false;
+// Expected: true
+print false || true;
+// Expected: false
+print !true;

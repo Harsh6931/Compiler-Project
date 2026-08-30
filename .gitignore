@@ -1,3 +1,24 @@
+# Personal / planning docs (local only)
 CONTRIBUTING.md
 PLAN.md
 PROJECT_SUMMARY.md
+my_decision.md
+
+# Build artifacts
+build/
+cmake-build-*/
+out/
+lumen
+lumen.exe
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+
+# IDE / OS
+.vs/
+.vscode/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

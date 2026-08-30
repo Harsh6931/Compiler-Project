@@ -1,0 +1,19 @@
+// Recursive function — Fibonacci
+fn fib(n) {
+    if (n < 2) {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+let result = fib(10);
+print result;
+// Expected: 55
+
+// Simple multi-param function
+fn add(a, b) {
+    return a + b;
+}
+
+print add(3, 4);
+// Expected: 7
