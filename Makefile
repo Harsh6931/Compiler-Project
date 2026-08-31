@@ -8,6 +8,7 @@ SRC      := src/main.cpp \
            src/interpreter/interpreter.cpp \
            src/compiler/chunk.cpp \
            src/compiler/compiler.cpp \
+           src/compiler/optimizer.cpp \
            src/compiler/disassembler.cpp \
            src/vm/vm.cpp
 TARGET   := lumen

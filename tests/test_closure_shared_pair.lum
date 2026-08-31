@@ -1,0 +1,22 @@
+// Two returned closures share one captured variable
+fn makePair() {
+    let i = 0;
+    fn inc() {
+        i = i + 1;
+        return i;
+    }
+    fn get() {
+        return i;
+    }
+    return [inc, get];
+}
+
+let pair = makePair();
+let inc = pair[0];
+let get = pair[1];
+print get();
+print inc();
+print get();
+print inc();
+print get();
+// Expected: 0, 1, 1, 2, 2

@@ -1,0 +1,19 @@
+// Nested closure returns another closure that still sees outer capture
+fn make() {
+    let x = 1;
+    fn layer1() {
+        fn layer2() {
+            x = x * 2;
+            return x;
+        }
+        return layer2;
+    }
+    return layer1;
+}
+
+let l1 = make();
+let l2 = l1();
+print l2();
+print l2();
+print l2();
+// Expected: 2, 4, 8

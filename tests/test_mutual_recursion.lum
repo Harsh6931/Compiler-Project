@@ -1,0 +1,20 @@
+// Mutual recursion
+fn even(n) {
+    if (n == 0) {
+        return true;
+    }
+    return odd(n - 1);
+}
+
+fn odd(n) {
+    if (n == 0) {
+        return false;
+    }
+    return even(n - 1);
+}
+
+print even(4);
+print odd(4);
+print even(5);
+print odd(5);
+// Expected: true, false, false, true

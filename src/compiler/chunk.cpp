@@ -14,6 +14,19 @@ std::string ConstantValue::toString() const {
             return string;
         case Type::Function:
             return "<fn " + function->name + ">";
+        case Type::Closure:
+            return "<fn " + closure->function->name + ">";
+        case Type::Array: {
+            std::string out = "[";
+            for (size_t i = 0; i < array->elements.size(); ++i) {
+                if (i > 0) out += ", ";
+                out += array->elements[i].toString();
+            }
+            out += "]";
+            return out;
+        }
+        case Type::Native:
+            return "<native fn>";
     }
     return "nil";
 }

@@ -11,7 +11,7 @@
 
 enum class TokenType {
     // Single-character eg. LPAREN= left paranthesis
-    LPAREN, RPAREN, LBRACE, RBRACE, SEMICOLON, COMMA,
+    LPAREN, RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET, SEMICOLON, COMMA,
     PLUS, MINUS, STAR, SLASH, BANG,
     // One or two characters
     EQ, EQ_EQ, BANG_EQ, LESS, GREATER, LESS_EQ, GREATER_EQ,
@@ -30,9 +30,13 @@ struct Token {
     TokenType type;
     std::string lexeme;
     int line;
+    int column;  // 1-based start column of the lexeme on that line
 
-    Token(TokenType type, std::string lexeme, int line)
-        : type(type), lexeme(std::move(lexeme)), line(line) {}
+    Token(TokenType type, std::string lexeme, int line, int column = 1)
+        : type(type),
+          lexeme(std::move(lexeme)),
+          line(line),
+          column(column) {}
 };
 
 inline std::string tokenTypeToString(TokenType type) {
@@ -41,6 +45,8 @@ inline std::string tokenTypeToString(TokenType type) {
         case TokenType::RPAREN: return "RPAREN";
         case TokenType::LBRACE: return "LBRACE";
         case TokenType::RBRACE: return "RBRACE";
+        case TokenType::LBRACKET: return "LBRACKET";
+        case TokenType::RBRACKET: return "RBRACKET";
         case TokenType::SEMICOLON: return "SEMICOLON";
         case TokenType::COMMA: return "COMMA";
         case TokenType::PLUS: return "PLUS";

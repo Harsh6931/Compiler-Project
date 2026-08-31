@@ -1,0 +1,2 @@
+// Div by zero must error on both backends
+print 1 / 0;

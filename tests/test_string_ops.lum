@@ -1,0 +1,6 @@
+// String escapes, concat, empty string
+print "hello\tworld";
+print "line\nbreak";
+print "" + "x";
+print "a" + "b" + "c";
+// Expected: hello<tab>world, line\nbreak, x, abc

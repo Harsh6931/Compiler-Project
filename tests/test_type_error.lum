@@ -1,0 +1,2 @@
+// Type errors for arithmetic / unary
+print "hi" - 1;

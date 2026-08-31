@@ -1,0 +1,13 @@
+// Unary ops, equality, inequality, nested arithmetic
+print -5;
+print !false;
+print !true;
+print 1 == 1;
+print 1 != 2;
+print "a" == "a";
+print "a" != "b";
+print (2 + 3) * 4;
+print 20 / 4;
+print 3 < 5;
+print 5 >= 5;
+// Expected: -5, true, false, true, true, true, true, 20, 5, true, true

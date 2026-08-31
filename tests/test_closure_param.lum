@@ -1,0 +1,11 @@
+// Inner fn captures outer parameter
+fn outer(n) {
+    fn add() {
+        return n + 1;
+    }
+    return add;
+}
+
+let f = outer(10);
+print f();
+// Expected: 11

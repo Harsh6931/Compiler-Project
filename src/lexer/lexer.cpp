@@ -3,12 +3,14 @@
 
 #include "lexer.hpp"
 
+#include "util/error_format.hpp"
+
 #include <cctype>
 #include <stdexcept>
 #include <unordered_map>
 
 Lexer::Lexer(const std::string& source)
-    : source(source), position(0), line(1) {}
+    : source(source), position(0), line(1), column(1) {}
 
 std::vector<Token> Lexer::tokenize() {  // run loop to read characters and tokenize the source code completely
     while (position < source.length()) {
@@ -25,7 +27,8 @@ std::vector<Token> Lexer::tokenize() {  // run loop to read characters and token
                 skipComment();
                 continue;
             }
-            addToken(TokenType::SLASH, std::string(1, advance()));
+            int startCol = column;
+            addToken(TokenType::SLASH, std::string(1, advance()), startCol);
             continue;
         }
 
@@ -47,90 +50,97 @@ std::vector<Token> Lexer::tokenize() {  // run loop to read characters and token
         // if its not a number, string, identifier, or comment, its an operator or punctuation
         // Operators and punctuation — always consume the first character,
         // then optionally match a second character for two-char tokens.
+        int startCol = column;
         switch (c) {
             case '(':
-                addToken(TokenType::LPAREN, std::string(1, advance()));
+                addToken(TokenType::LPAREN, std::string(1, advance()), startCol);
                 break;
             case ')':
-                addToken(TokenType::RPAREN, std::string(1, advance()));
+                addToken(TokenType::RPAREN, std::string(1, advance()), startCol);
                 break;
             case '{':
-                addToken(TokenType::LBRACE, std::string(1, advance()));
+                addToken(TokenType::LBRACE, std::string(1, advance()), startCol);
                 break;
             case '}':
-                addToken(TokenType::RBRACE, std::string(1, advance()));
+                addToken(TokenType::RBRACE, std::string(1, advance()), startCol);
+                break;
+            case '[':
+                addToken(TokenType::LBRACKET, std::string(1, advance()), startCol);
+                break;
+            case ']':
+                addToken(TokenType::RBRACKET, std::string(1, advance()), startCol);
                 break;
             case ';':
-                addToken(TokenType::SEMICOLON, std::string(1, advance()));
+                addToken(TokenType::SEMICOLON, std::string(1, advance()), startCol);
                 break;
             case ',':
-                addToken(TokenType::COMMA, std::string(1, advance()));
+                addToken(TokenType::COMMA, std::string(1, advance()), startCol);
                 break;
             case '+':
-                addToken(TokenType::PLUS, std::string(1, advance()));
+                addToken(TokenType::PLUS, std::string(1, advance()), startCol);
                 break;
             case '-':
-                addToken(TokenType::MINUS, std::string(1, advance()));
+                addToken(TokenType::MINUS, std::string(1, advance()), startCol);
                 break;
             case '*':
-                addToken(TokenType::STAR, std::string(1, advance()));
+                addToken(TokenType::STAR, std::string(1, advance()), startCol);
                 break;
             case '!':
                 advance();
                 if (match('=')) {
-                    addToken(TokenType::BANG_EQ, "!=");
+                    addToken(TokenType::BANG_EQ, "!=", startCol);
                 } else {
-                    addToken(TokenType::BANG, "!");
+                    addToken(TokenType::BANG, "!", startCol);
                 }
                 break;
             case '=':
                 advance();
                 if (match('=')) {
-                    addToken(TokenType::EQ_EQ, "==");
+                    addToken(TokenType::EQ_EQ, "==", startCol);
                 } else {
-                    addToken(TokenType::EQ, "=");
+                    addToken(TokenType::EQ, "=", startCol);
                 }
                 break;
             case '<':
                 advance();
                 if (match('=')) {
-                    addToken(TokenType::LESS_EQ, "<=");
+                    addToken(TokenType::LESS_EQ, "<=", startCol);
                 } else {
-                    addToken(TokenType::LESS, "<");
+                    addToken(TokenType::LESS, "<", startCol);
                 }
                 break;
             case '>':
                 advance();
                 if (match('=')) {
-                    addToken(TokenType::GREATER_EQ, ">=");
+                    addToken(TokenType::GREATER_EQ, ">=", startCol);
                 } else {
-                    addToken(TokenType::GREATER, ">");
+                    addToken(TokenType::GREATER, ">", startCol);
                 }
                 break;
             case '&':
                 advance();
                 if (match('&')) {
-                    addToken(TokenType::AND, "&&");
+                    addToken(TokenType::AND, "&&", startCol);
                 } else {
-                    error("Expected '&' after '&' for '&&'");
+                    error("Expected '&' after '&' for '&&'", startCol);
                 }
                 break;
             case '|':
                 advance();
                 if (match('|')) {
-                    addToken(TokenType::OR, "||");
+                    addToken(TokenType::OR, "||", startCol);
                 } else {
-                    error("Expected '|' after '|' for '||'");
+                    error("Expected '|' after '|' for '||'", startCol);
                 }
                 break;
             default:
-                error("Unexpected character: " + std::string(1, c));
+                error("Unexpected character: " + std::string(1, c), startCol);
                 advance();
                 break;
         }
     }
 
-    tokens.emplace_back(TokenType::END_OF_FILE, "", line);
+    tokens.emplace_back(TokenType::END_OF_FILE, "", line, column);
     return tokens;
 }
 
@@ -142,7 +152,14 @@ char Lexer::peek() const {
 }
 
 char Lexer::advance() {
-    return source[position++];
+    char c = source[position++];
+    if (c == '\n') {
+        line++;
+        column = 1;
+    } else {
+        column++;
+    }
+    return c;
 }
 
 bool Lexer::match(char expected) {
@@ -155,9 +172,6 @@ bool Lexer::match(char expected) {
 
 void Lexer::skipWhitespace() {
     while (std::isspace(static_cast<unsigned char>(peek()))) {
-        if (peek() == '\n') {
-            line++;  // increment line number
-        }
         advance();
     }
 }
@@ -169,24 +183,22 @@ void Lexer::skipComment() {
 }
 
 void Lexer::readNumber() {
+    int startCol = column;
     std::string num;
     while (std::isdigit(static_cast<unsigned char>(peek()))) {
         num += advance();
     }
-    addToken(TokenType::NUMBER, num);
+    addToken(TokenType::NUMBER, num, startCol);
 }
 
 void Lexer::readString() {
+    int startCol = column;
     advance();  // opening "
     std::string str;
 
     // how to handle line functions eg n,tab
     
     while (peek() != '"' && peek() != '\0') {  
-        if (peek() == '\n') {  
-            line++;
-        }
-
         if (peek() == '\\') {   
             advance();
             switch (peek()) {
@@ -207,7 +219,7 @@ void Lexer::readString() {
                     advance();
                     break;
                 default:
-                    error("Invalid escape sequence");
+                    error("Invalid escape sequence", column);
                     return;
             }
         } else {
@@ -216,15 +228,16 @@ void Lexer::readString() {
     }
 
     if (peek() == '\0') {
-        error("Unterminated string");
+        error("Unterminated string", startCol);
         return;
     }
 
     advance();  // closing "
-    addToken(TokenType::STRING, str);
+    addToken(TokenType::STRING, str, startCol);
 }
 
 void Lexer::readIdentifier() {
+    int startCol = column;
     std::string id;
     while (std::isalnum(static_cast<unsigned char>(peek())) || peek() == '_') {
         id += advance();
@@ -244,18 +257,18 @@ void Lexer::readIdentifier() {
 
     auto it = keywords.find(id);
     if (it != keywords.end()) {
-        addToken(it->second, id);
+        addToken(it->second, id, startCol);
     } else {
-        addToken(TokenType::IDENTIFIER, id);
+        addToken(TokenType::IDENTIFIER, id, startCol);
     }
 }
 
-void Lexer::addToken(TokenType type, const std::string& lexeme) {
-    tokens.emplace_back(type, lexeme, line);
+void Lexer::addToken(TokenType type, const std::string& lexeme, int startColumn) {
+    tokens.emplace_back(type, lexeme, line, startColumn);
 }
 
-void Lexer::error(const std::string& message) {
-    tokens.emplace_back(TokenType::ERROR, message, line);
+void Lexer::error(const std::string& message, int errorColumn) {
+    tokens.emplace_back(TokenType::ERROR, message, line, errorColumn);
     throw std::runtime_error(
-        "Lexer error at line " + std::to_string(line) + ": " + message);
+        formatCaretError(source, line, errorColumn, "Lexer error", message));
 }

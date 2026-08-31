@@ -2,31 +2,45 @@
 
 #include "lexer/token.hpp"
 
-#include <stdexcept>
-
 std::shared_ptr<FunctionObject> Compiler::compile(const Program& program) {
     auto script = std::make_shared<FunctionObject>();
     script->name = "<script>";
     script->arity = 0;
 
-    current = script.get();
-    scopeDepth = 0;
-    locals.clear();
+    CompilerFunction top;
+    top.function = script.get();
+    top.enclosing = nullptr;
+    top.scopeDepth = 0;
+    current = &top;
 
-    for (const auto& stmt : program.statements) {
-        compileStmt(*stmt);
+    bool endsWithReturn = compileStatements(program.statements);
+    if (!endsWithReturn) {
+        emitOp(OP_NIL, 0);
+        emitReturn(0);
     }
-
-    // Implicit nil return at end of script
-    emitOp(OP_NIL, 0);
-    emitReturn(0);
 
     current = nullptr;
     return script;
 }
 
+bool Compiler::compileStatements(const std::vector<StmtPtr>& statements) {
+    bool unreachable = false;
+    bool sawReturn = false;
+    for (const auto& stmt : statements) {
+        if (unreachable) {
+            continue;  // dead code after return — do not emit
+        }
+        compileStmt(*stmt);
+        if (dynamic_cast<const ReturnStmt*>(stmt.get()) != nullptr) {
+            unreachable = true;
+            sawReturn = true;
+        }
+    }
+    return sawReturn;
+}
+
 Chunk& Compiler::chunk() {
-    return current->chunk;
+    return current->function->chunk;
 }
 
 void Compiler::emitByte(uint8_t byte, int line) {
@@ -37,14 +51,8 @@ void Compiler::emitOp(OpCode op, int line) {
     chunk().writeOp(op, line);
 }
 
-void Compiler::emitOps(OpCode a, OpCode b, int line) {
-    emitOp(a, line);
-    emitOp(b, line);
-}
-
 uint8_t Compiler::makeConstant(ConstantValue value) {
-    int index = chunk().addConstant(std::move(value));
-    return static_cast<uint8_t>(index);
+    return static_cast<uint8_t>(chunk().addConstant(std::move(value)));
 }
 
 void Compiler::emitConstant(ConstantValue value, int line) {
@@ -69,31 +77,89 @@ void Compiler::emitReturn(int line) {
 }
 
 void Compiler::beginScope() {
-    scopeDepth++;
+    current->scopeDepth++;
 }
 
 void Compiler::endScope(int line) {
-    while (!locals.empty() && locals.back().depth >= scopeDepth) {
-        emitOp(OP_POP, line);
-        locals.pop_back();
+    while (!current->locals.empty() &&
+           current->locals.back().depth >= current->scopeDepth) {
+        if (current->locals.back().isCaptured) {
+            emitOp(OP_CLOSE_UPVALUE, line);
+        } else {
+            emitOp(OP_POP, line);
+        }
+        current->locals.pop_back();
     }
-    scopeDepth--;
+    current->scopeDepth--;
 }
 
-int Compiler::resolveLocal(const std::string& name) const {
-    for (int i = static_cast<int>(locals.size()) - 1; i >= 0; --i) {
-        if (locals[i].name == name) {
+void Compiler::addLocal(const std::string& name) {
+    if (current->locals.size() >= 256) {
+        throw CompileError("Too many local variables in function");
+    }
+    current->locals.push_back(Local{name, current->scopeDepth, false});
+}
+
+int Compiler::resolveLocal(CompilerFunction* comp, const std::string& name) {
+    for (int i = static_cast<int>(comp->locals.size()) - 1; i >= 0; --i) {
+        if (comp->locals[i].name == name) {
             return i;
         }
     }
     return -1;
 }
 
-void Compiler::addLocal(const std::string& name) {
-    if (locals.size() >= 256) {
-        throw CompileError("Too many local variables in function");
+int Compiler::addUpvalue(CompilerFunction* comp, uint8_t index, bool isLocal) {
+    for (size_t i = 0; i < comp->upvalues.size(); ++i) {
+        if (comp->upvalues[i].index == index &&
+            comp->upvalues[i].isLocal == isLocal) {
+            return static_cast<int>(i);
+        }
     }
-    locals.push_back(Local{name, scopeDepth});
+    if (comp->upvalues.size() >= 256) {
+        throw CompileError("Too many closure variables in function");
+    }
+    comp->upvalues.push_back(UpvalueDesc{isLocal, index});
+    return static_cast<int>(comp->upvalues.size() - 1);
+}
+
+int Compiler::resolveUpvalue(CompilerFunction* comp, const std::string& name) {
+    if (comp->enclosing == nullptr) {
+        return -1;
+    }
+
+    int local = resolveLocal(comp->enclosing, name);
+    if (local != -1) {
+        comp->enclosing->locals[local].isCaptured = true;
+        return addUpvalue(comp, static_cast<uint8_t>(local), true);
+    }
+
+    int upvalue = resolveUpvalue(comp->enclosing, name);
+    if (upvalue != -1) {
+        return addUpvalue(comp, static_cast<uint8_t>(upvalue), false);
+    }
+
+    return -1;
+}
+
+void Compiler::namedVariable(const std::string& name, int line, bool assign) {
+    OpCode getOp;
+    OpCode setOp;
+    int arg = resolveLocal(current, name);
+    if (arg != -1) {
+        getOp = OP_GET_LOCAL;
+        setOp = OP_SET_LOCAL;
+    } else if ((arg = resolveUpvalue(current, name)) != -1) {
+        getOp = OP_GET_UPVALUE;
+        setOp = OP_SET_UPVALUE;
+    } else {
+        arg = makeConstant(ConstantValue::makeString(name));
+        getOp = OP_GET_GLOBAL;
+        setOp = OP_SET_GLOBAL;
+    }
+
+    emitOp(assign ? setOp : getOp, line);
+    emitByte(static_cast<uint8_t>(arg), line);
 }
 
 void Compiler::compileStmt(const Stmt& stmt) {
@@ -111,9 +177,8 @@ void Compiler::compileStmt(const Stmt& stmt) {
 
     if (auto* s = dynamic_cast<const VarDeclStmt*>(&stmt)) {
         compileExpr(*s->initializer);
-        if (scopeDepth > 0) {
+        if (current->scopeDepth > 0) {
             addLocal(s->name);
-            // value already on stack in the new local slot
         } else {
             emitOp(OP_DEFINE_GLOBAL, s->line);
             emitByte(makeConstant(ConstantValue::makeString(s->name)), s->line);
@@ -123,9 +188,7 @@ void Compiler::compileStmt(const Stmt& stmt) {
 
     if (auto* s = dynamic_cast<const BlockStmt*>(&stmt)) {
         beginScope();
-        for (const auto& child : s->statements) {
-            compileStmt(*child);
-        }
+        compileStatements(s->statements);
         endScope(0);
         return;
     }
@@ -133,13 +196,11 @@ void Compiler::compileStmt(const Stmt& stmt) {
     if (auto* s = dynamic_cast<const IfStmt*>(&stmt)) {
         compileExpr(*s->condition);
         int thenJump = emitJump(OP_JUMP_IF_FALSE, 0);
-        emitOp(OP_POP, 0);  // pop condition in then branch
+        emitOp(OP_POP, 0);
         compileStmt(*s->thenBranch);
-
         int elseJump = emitJump(OP_JUMP, 0);
         patchJump(thenJump);
-        emitOp(OP_POP, 0);  // pop condition in else/fallthrough
-
+        emitOp(OP_POP, 0);
         if (s->elseBranch) {
             compileStmt(*s->elseBranch);
         }
@@ -182,38 +243,37 @@ void Compiler::compileFunction(const FunctionDeclStmt& stmt) {
     function->name = stmt.name;
     function->arity = static_cast<int>(stmt.params.size());
 
-    FunctionObject* enclosing = current;
-    std::vector<Local> enclosingLocals = locals;
-    int enclosingDepth = scopeDepth;
+    CompilerFunction nested;
+    nested.function = function.get();
+    nested.enclosing = current;
+    nested.scopeDepth = 0;
 
-    current = function.get();
-    locals.clear();
-    scopeDepth = 0;
-    beginScope();  // function body scope
+    CompilerFunction* enclosing = current;
+    current = &nested;
 
-    // Slot 0 reserved for the function itself (call frame); params follow.
-    // For disassembly/VM compatibility with Crafting Interpreters layout:
-    // locals[0] = function name (or ""), then params.
+    beginScope();
     addLocal(stmt.name);
     for (const auto& param : stmt.params) {
         addLocal(param);
     }
 
-    for (const auto& bodyStmt : stmt.body) {
-        compileStmt(*bodyStmt);
+    bool endsWithReturn = compileStatements(stmt.body);
+    if (!endsWithReturn) {
+        emitOp(OP_NIL, stmt.line);
+        emitReturn(stmt.line);
     }
 
-    emitOp(OP_NIL, stmt.line);
-    emitReturn(stmt.line);
-
-    // Restore enclosing compiler state
+    function->upvalues = nested.upvalues;
     current = enclosing;
-    locals = std::move(enclosingLocals);
-    scopeDepth = enclosingDepth;
 
-    // Define function as a global (or local if nested — Stage 4: always global at declare site depth)
-    emitConstant(ConstantValue::makeFunction(function), stmt.line);
-    if (scopeDepth > 0) {
+    emitOp(OP_CLOSURE, stmt.line);
+    emitByte(makeConstant(ConstantValue::makeFunction(function)), stmt.line);
+    for (const auto& uv : function->upvalues) {
+        emitByte(uv.isLocal ? 1 : 0, stmt.line);
+        emitByte(uv.index, stmt.line);
+    }
+
+    if (current->scopeDepth > 0) {
         addLocal(stmt.name);
     } else {
         emitOp(OP_DEFINE_GLOBAL, stmt.line);
@@ -237,27 +297,13 @@ void Compiler::compileExpr(const Expr& expr) {
     }
 
     if (auto* e = dynamic_cast<const VariableExpr*>(&expr)) {
-        int local = resolveLocal(e->name);
-        if (local >= 0) {
-            emitOp(OP_GET_LOCAL, e->line);
-            emitByte(static_cast<uint8_t>(local), e->line);
-        } else {
-            emitOp(OP_GET_GLOBAL, e->line);
-            emitByte(makeConstant(ConstantValue::makeString(e->name)), e->line);
-        }
+        namedVariable(e->name, e->line, false);
         return;
     }
 
     if (auto* e = dynamic_cast<const AssignExpr*>(&expr)) {
         compileExpr(*e->value);
-        int local = resolveLocal(e->name);
-        if (local >= 0) {
-            emitOp(OP_SET_LOCAL, e->line);
-            emitByte(static_cast<uint8_t>(local), e->line);
-        } else {
-            emitOp(OP_SET_GLOBAL, e->line);
-            emitByte(makeConstant(ConstantValue::makeString(e->name)), e->line);
-        }
+        namedVariable(e->name, e->line, true);
         return;
     }
 
@@ -277,7 +323,6 @@ void Compiler::compileExpr(const Expr& expr) {
     }
 
     if (auto* e = dynamic_cast<const BinaryExpr*>(&expr)) {
-        // Short-circuit &&
         if (e->op == TokenType::AND) {
             compileExpr(*e->left);
             int endJump = emitJump(OP_JUMP_IF_FALSE, e->line);
@@ -286,7 +331,6 @@ void Compiler::compileExpr(const Expr& expr) {
             patchJump(endJump);
             return;
         }
-        // Short-circuit ||
         if (e->op == TokenType::OR) {
             compileExpr(*e->left);
             int elseJump = emitJump(OP_JUMP_IF_FALSE, e->line);
@@ -345,6 +389,31 @@ void Compiler::compileExpr(const Expr& expr) {
         }
         emitOp(OP_CALL, e->line);
         emitByte(static_cast<uint8_t>(e->arguments.size()), e->line);
+        return;
+    }
+
+    // Array / index nodes added in Stage 6 slice 4 — handled below when present
+    if (auto* e = dynamic_cast<const ArrayExpr*>(&expr)) {
+        for (const auto& el : e->elements) {
+            compileExpr(*el);
+        }
+        emitOp(OP_BUILD_ARRAY, e->line);
+        emitByte(static_cast<uint8_t>(e->elements.size()), e->line);
+        return;
+    }
+
+    if (auto* e = dynamic_cast<const IndexExpr*>(&expr)) {
+        compileExpr(*e->object);
+        compileExpr(*e->index);
+        emitOp(OP_INDEX_GET, e->line);
+        return;
+    }
+
+    if (auto* e = dynamic_cast<const IndexAssignExpr*>(&expr)) {
+        compileExpr(*e->object);
+        compileExpr(*e->index);
+        compileExpr(*e->value);
+        emitOp(OP_INDEX_SET, e->line);
         return;
     }
 

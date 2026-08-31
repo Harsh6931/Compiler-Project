@@ -1,0 +1,14 @@
+// Closure captures array and mutates an element
+fn make() {
+    let a = [0, 0];
+    fn bump() {
+        a[0] = a[0] + 1;
+        return a[0];
+    }
+    return bump;
+}
+
+let f = make();
+print f();
+print f();
+// Expected: 1, 2

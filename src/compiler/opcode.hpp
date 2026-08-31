@@ -2,7 +2,6 @@
 #define OPCODE_HPP
 
 #include <cstdint>
-#include <string>
 
 enum OpCode : uint8_t {
     OP_CONSTANT,
@@ -15,6 +14,8 @@ enum OpCode : uint8_t {
     OP_GET_GLOBAL,
     OP_DEFINE_GLOBAL,
     OP_SET_GLOBAL,
+    OP_GET_UPVALUE,
+    OP_SET_UPVALUE,
     OP_EQUAL,
     OP_NOT_EQUAL,
     OP_GREATER,
@@ -32,7 +33,12 @@ enum OpCode : uint8_t {
     OP_JUMP_IF_FALSE,
     OP_LOOP,
     OP_CALL,
+    OP_CLOSURE,
+    OP_CLOSE_UPVALUE,
     OP_RETURN,
+    OP_BUILD_ARRAY,
+    OP_INDEX_GET,
+    OP_INDEX_SET,
 };
 
 inline const char* opcodeName(OpCode op) {
@@ -47,6 +53,8 @@ inline const char* opcodeName(OpCode op) {
         case OP_GET_GLOBAL: return "OP_GET_GLOBAL";
         case OP_DEFINE_GLOBAL: return "OP_DEFINE_GLOBAL";
         case OP_SET_GLOBAL: return "OP_SET_GLOBAL";
+        case OP_GET_UPVALUE: return "OP_GET_UPVALUE";
+        case OP_SET_UPVALUE: return "OP_SET_UPVALUE";
         case OP_EQUAL: return "OP_EQUAL";
         case OP_NOT_EQUAL: return "OP_NOT_EQUAL";
         case OP_GREATER: return "OP_GREATER";
@@ -64,7 +72,12 @@ inline const char* opcodeName(OpCode op) {
         case OP_JUMP_IF_FALSE: return "OP_JUMP_IF_FALSE";
         case OP_LOOP: return "OP_LOOP";
         case OP_CALL: return "OP_CALL";
+        case OP_CLOSURE: return "OP_CLOSURE";
+        case OP_CLOSE_UPVALUE: return "OP_CLOSE_UPVALUE";
         case OP_RETURN: return "OP_RETURN";
+        case OP_BUILD_ARRAY: return "OP_BUILD_ARRAY";
+        case OP_INDEX_GET: return "OP_INDEX_GET";
+        case OP_INDEX_SET: return "OP_INDEX_SET";
         default: return "OP_UNKNOWN";
     }
 }

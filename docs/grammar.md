@@ -40,7 +40,7 @@ functionDecl    = "fn" IDENTIFIER "(" parameterList? ")" block
 parameterList   = IDENTIFIER ("," IDENTIFIER)*
 
 expression      = assignment
-assignment      = IDENTIFIER "=" expression
+assignment      = call "=" expression
                 | logicalOr
 logicalOr       = logicalAnd ( "||" logicalAnd )*
 logicalAnd      = equality ( "&&" equality )*
@@ -50,7 +50,7 @@ term            = factor ( ("+" | "-") factor )*
 factor          = unary ( ("*" | "/") unary )*
 unary           = ("-" | "!") unary
                 | call
-call            = primary ( "(" argumentList? ")" )*
+call            = primary ( "(" argumentList? ")" | "[" expression "]" )*
 argumentList    = expression ("," expression)*
 primary         = NUMBER
                 | STRING
@@ -58,7 +58,10 @@ primary         = NUMBER
                 | "false"
                 | IDENTIFIER
                 | "(" expression ")"
+                | "[" (expression ("," expression)*)? "]"
 ```
+
+Indexing uses `call` postfix forms: `a[i]` and assignment `a[i] = value` (parser accepts identifier or index targets).
 
 ---
 
@@ -78,7 +81,7 @@ IDENTIFIER      = [a-zA-Z_][a-zA-Z0-9_]*
 ### Operators and punctuation
 
 `+` `-` `*` `/` `!` `==` `!=` `<` `>` `<=` `>=` `&&` `||` `=`  
-`(` `)` `{` `}` `,` `;`
+`(` `)` `{` `}` `[` `]` `,` `;`
 
 ---
 
@@ -92,13 +95,15 @@ IDENTIFIER      = [a-zA-Z_][a-zA-Z0-9_]*
 6. Term `+` `-`
 7. Factor `*` `/`
 8. Unary `-` `!`
-9. Call `f(...)`
+9. Call / index `f(...)` `a[i]`
 10. Primary
 
 ---
 
 ## Notes
 
-- Values are dynamically typed at runtime: integers, booleans, and strings.
-- `&&` and `||` are intended to short-circuit (implemented in later stages).
+- Values are dynamically typed at runtime: integers, booleans, strings, arrays, and closures.
+- Nested `fn` declarations capture enclosing locals (closures / upvalues).
+- Builtin `len(array)` returns array length.
+- `&&` and `||` short-circuit.
 - Single-line comments start with `//` and run to end of line.

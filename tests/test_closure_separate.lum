@@ -1,0 +1,17 @@
+// Separate factory calls get separate counters
+fn makeCounter() {
+    let i = 0;
+    fn tick() {
+        i = i + 1;
+        return i;
+    }
+    return tick;
+}
+
+let a = makeCounter();
+let b = makeCounter();
+print a();
+print a();
+print b();
+print a();
+// Expected: 1, 2, 1, 3

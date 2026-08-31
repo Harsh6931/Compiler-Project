@@ -1,0 +1,9 @@
+// Nested folds that still leave a call / variable mixed in
+let n = 2;
+print 1 + 2 + n;
+print (3 * 4) + n;
+print !"x";
+print !0;
+print false || (1 + 1);
+print true && (2 * 3);
+// Expected: 5, 14, false, false, 2, 6

@@ -1,0 +1,14 @@
+// Checkpoint: returned nested fn mutates captured i
+fn makeCounter() {
+    let i = 0;
+    fn tick() {
+        i = i + 1;
+        return i;
+    }
+    return tick;
+}
+
+let c = makeCounter();
+print c();
+print c();
+// Expected: 1, 2

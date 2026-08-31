@@ -1,0 +1,2 @@
+// Intentional parse error for caret demo
+let x = ;

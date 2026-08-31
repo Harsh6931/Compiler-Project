@@ -1,0 +1,9 @@
+// Deep recursion stress (fib-like depth via countdown)
+fn countdown(n) {
+    if (n == 0) {
+        return 0;
+    }
+    return 1 + countdown(n - 1);
+}
+print countdown(50);
+// Expected: 50

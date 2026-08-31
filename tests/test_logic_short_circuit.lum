@@ -1,0 +1,19 @@
+// && / || short-circuit and truthiness
+print true && true;
+print true && false;
+print false || true;
+print false || false;
+
+let x = 0;
+fn side() {
+    x = x + 1;
+    return true;
+}
+
+print false && side();
+print x;
+print true || side();
+print x;
+print true && side();
+print x;
+// Expected: true, false, true, false, false, 0, true, 0, true, 1

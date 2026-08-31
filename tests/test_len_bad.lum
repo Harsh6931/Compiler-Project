@@ -1,0 +1,2 @@
+// len on non-array should be a runtime error
+print len(42);

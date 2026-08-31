@@ -1,0 +1,14 @@
+// Captured local closed when nested block ends; value must survive return
+fn make() {
+    {
+        let x = 42;
+        fn inner() {
+            return x;
+        }
+        return inner;
+    }
+}
+
+let g = make();
+print g();
+// Expected: 42

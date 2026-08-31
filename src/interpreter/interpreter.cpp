@@ -6,7 +6,9 @@
 #include <utility>
 
 Interpreter::Interpreter()
-    : globals(std::make_shared<Environment>()), environment(globals) {}
+    : globals(std::make_shared<Environment>()), environment(globals) {
+    globals->define("len", Value::makeNative(InterpNativeId::Len));
+}
 
 void Interpreter::interpret(const Program& program) {
     try {
@@ -157,6 +159,49 @@ Value Interpreter::evaluate(const Expr& expr) {
         return callFunction(callee, arguments, e->line);
     }
 
+    if (auto* e = dynamic_cast<const ArrayExpr*>(&expr)) {
+        auto elements = std::make_shared<std::vector<Value>>();
+        elements->reserve(e->elements.size());
+        for (const auto& el : e->elements) {
+            elements->push_back(evaluate(*el));
+        }
+        return Value::makeArray(elements);
+    }
+
+    if (auto* e = dynamic_cast<const IndexExpr*>(&expr)) {
+        Value object = evaluate(*e->object);
+        Value index = evaluate(*e->index);
+        if (object.type != Value::Type::Array) {
+            throw RuntimeError(e->line, "Only arrays support indexing");
+        }
+        if (index.type != Value::Type::Number) {
+            throw RuntimeError(e->line, "Array index must be a number");
+        }
+        long long i = index.number;
+        if (i < 0 || i >= static_cast<long long>(object.array->size())) {
+            throw RuntimeError(e->line, "Array index out of bounds");
+        }
+        return (*object.array)[static_cast<size_t>(i)];
+    }
+
+    if (auto* e = dynamic_cast<const IndexAssignExpr*>(&expr)) {
+        Value object = evaluate(*e->object);
+        Value index = evaluate(*e->index);
+        Value value = evaluate(*e->value);
+        if (object.type != Value::Type::Array) {
+            throw RuntimeError(e->line, "Only arrays support indexing");
+        }
+        if (index.type != Value::Type::Number) {
+            throw RuntimeError(e->line, "Array index must be a number");
+        }
+        long long i = index.number;
+        if (i < 0 || i >= static_cast<long long>(object.array->size())) {
+            throw RuntimeError(e->line, "Array index out of bounds");
+        }
+        (*object.array)[static_cast<size_t>(i)] = value;
+        return value;
+    }
+
     throw RuntimeError(0, "Unknown expression type");
 }
 
@@ -231,6 +276,20 @@ Value Interpreter::evaluateBinary(TokenType op,
 Value Interpreter::callFunction(const Value& callee,
                                 const std::vector<Value>& args,
                                 int line) {
+    if (callee.type == Value::Type::Native) {
+        if (callee.nativeId == InterpNativeId::Len) {
+            if (args.size() != 1) {
+                throw RuntimeError(line, "len() expects 1 argument");
+            }
+            if (args[0].type != Value::Type::Array) {
+                throw RuntimeError(line, "len() expects an array");
+            }
+            return Value::makeNumber(
+                static_cast<long long>(args[0].array->size()));
+        }
+        throw RuntimeError(line, "Unknown native function");
+    }
+
     if (callee.type != Value::Type::Function) {
         throw RuntimeError(line, "Can only call functions");
     }
@@ -272,6 +331,10 @@ bool Interpreter::isEqual(const Value& a, const Value& b) const {
             return a.string == b.string;
         case Value::Type::Function:
             return a.declaration == b.declaration;
+        case Value::Type::Array:
+            return a.array.get() == b.array.get();
+        case Value::Type::Native:
+            return a.nativeId == b.nativeId;
     }
     return false;
 }
