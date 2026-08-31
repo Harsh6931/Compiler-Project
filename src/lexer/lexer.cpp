@@ -60,6 +60,12 @@ std::vector<Token> Lexer::tokenize() {  // run loop to read characters and token
             case '}':
                 addToken(TokenType::RBRACE, std::string(1, advance()));
                 break;
+            case '[':
+                addToken(TokenType::LBRACKET, std::string(1, advance()));
+                break;
+            case ']':
+                addToken(TokenType::RBRACKET, std::string(1, advance()));
+                break;
             case ';':
                 addToken(TokenType::SEMICOLON, std::string(1, advance()));
                 break;

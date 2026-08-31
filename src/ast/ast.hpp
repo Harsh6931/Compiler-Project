@@ -102,6 +102,36 @@ struct CallExpr : Expr { // function call node in AST (i.e. print(2+3))
         : callee(std::move(callee)), arguments(std::move(arguments)), line(line) {}
 };
 
+struct ArrayExpr : Expr {
+    std::vector<ExprPtr> elements;
+    int line;
+
+    ArrayExpr(std::vector<ExprPtr> elements, int line)
+        : elements(std::move(elements)), line(line) {}
+};
+
+struct IndexExpr : Expr {
+    ExprPtr object;
+    ExprPtr index;
+    int line;
+
+    IndexExpr(ExprPtr object, ExprPtr index, int line)
+        : object(std::move(object)), index(std::move(index)), line(line) {}
+};
+
+struct IndexAssignExpr : Expr {
+    ExprPtr object;
+    ExprPtr index;
+    ExprPtr value;
+    int line;
+
+    IndexAssignExpr(ExprPtr object, ExprPtr index, ExprPtr value, int line)
+        : object(std::move(object)),
+          index(std::move(index)),
+          value(std::move(value)),
+          line(line) {}
+};
+
 // Statements are the building blocks of the program.
 // They are the instructions that the compiler or interpreter will execute.
 

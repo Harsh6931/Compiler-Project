@@ -242,18 +242,26 @@ ExprPtr Parser::parsePrecedence(int minPrecedence) {
 
         Token op = advance();
 
-        // Assignment is special: left must be a variable name
+        // Assignment is special: variable or array index
         if (opType == TokenType::EQ) {
-            auto* var = dynamic_cast<VariableExpr*>(left.get());
-            if (!var) {
-                throw error(op, "Invalid assignment target");
+            if (auto* var = dynamic_cast<VariableExpr*>(left.get())) {
+                std::string name = var->name;
+                int line = var->line;
+                ExprPtr value = parsePrecedence(prec);
+                left = std::make_unique<AssignExpr>(
+                    std::move(name), std::move(value), line);
+                continue;
             }
-            std::string name = var->name;
-            int line = var->line;
-            // right-associative: parse at same precedence
-            ExprPtr value = parsePrecedence(prec);
-            left = std::make_unique<AssignExpr>(std::move(name), std::move(value), line);
-            continue;
+            if (auto* idx = dynamic_cast<IndexExpr*>(left.get())) {
+                int line = idx->line;
+                ExprPtr object = std::move(idx->object);
+                ExprPtr index = std::move(idx->index);
+                ExprPtr value = parsePrecedence(prec);
+                left = std::make_unique<IndexAssignExpr>(
+                    std::move(object), std::move(index), std::move(value), line);
+                continue;
+            }
+            throw error(op, "Invalid assignment target");
         }
 
         int nextMin = isRightAssociative(opType) ? prec : prec + 1;
@@ -292,13 +300,32 @@ ExprPtr Parser::parsePrefix() {
     } else if (match(TokenType::LPAREN)) {
         expr = expression();
         consume(TokenType::RPAREN, "Expected ')' after expression");
+    } else if (match(TokenType::LBRACKET)) {
+        Token start = previous();
+        std::vector<ExprPtr> elements;
+        if (!check(TokenType::RBRACKET)) {
+            do {
+                elements.push_back(expression());
+            } while (match(TokenType::COMMA));
+        }
+        consume(TokenType::RBRACKET, "Expected ']' after array elements");
+        expr = std::make_unique<ArrayExpr>(std::move(elements), start.line);
     } else {
         throw error(peek(), "Expected expression");
     }
 
-    // Postfix calls: primary ( "(" args? ")" )*
-    while (match(TokenType::LPAREN)) {
-        expr = finishCall(std::move(expr));
+    // Postfix calls and indexing: primary ( "(" args ")" | "[" index "]" )*
+    while (true) {
+        if (match(TokenType::LPAREN)) {
+            expr = finishCall(std::move(expr));
+        } else if (match(TokenType::LBRACKET)) {
+            ExprPtr index = expression();
+            Token rb = consume(TokenType::RBRACKET, "Expected ']' after index");
+            expr = std::make_unique<IndexExpr>(
+                std::move(expr), std::move(index), rb.line);
+        } else {
+            break;
+        }
     }
 
     return expr;
