@@ -1,0 +1,19 @@
+// DCE inside nested block; code after if-return is NOT dead
+fn a() {
+    {
+        return 1;
+        print 111;
+    }
+}
+
+fn b(flag) {
+    if (flag) {
+        return 2;
+    }
+    return 3;
+}
+
+print a();
+print b(true);
+print b(false);
+// Expected: 1, 2, 3

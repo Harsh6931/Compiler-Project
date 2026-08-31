@@ -1,0 +1,11 @@
+// Index chain assign + call result used as index
+fn idx() {
+    return 1;
+}
+let a = [10, 20, 30];
+a[idx()] = 99;
+print a[0];
+print a[1];
+print a[2];
+print a[0 + 1 + 1];
+// Expected: 10, 99, 30, 30

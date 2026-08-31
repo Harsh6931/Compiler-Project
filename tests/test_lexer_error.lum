@@ -1,0 +1,2 @@
+// Lexer error: unexpected character
+let x = 1 @ 2;

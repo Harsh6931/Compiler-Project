@@ -1,0 +1,12 @@
+// Closure + folding interaction; capture still works after outer consts fold
+fn make() {
+    let base = 1 + 2;
+    fn add(x) {
+        return base + x;
+    }
+    return add;
+}
+let f = make();
+print f(10);
+print f(0);
+// Expected: 13, 3

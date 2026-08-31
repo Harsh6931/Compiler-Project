@@ -1,0 +1,3 @@
+// Call non-function
+let x = 10;
+print x();
