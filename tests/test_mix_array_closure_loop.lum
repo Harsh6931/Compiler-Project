@@ -1,0 +1,19 @@
+// Mix: while builds array via index set; closure reads final state
+fn fill(n) {
+    let a = [0, 0, 0, 0, 0];
+    let i = 0;
+    while (i < n) {
+        a[i] = (i + 1) * 10;
+        i = i + 1;
+    }
+    fn at(j) {
+        return a[j];
+    }
+    return at;
+}
+
+let get = fill(5);
+print get(0);
+print get(4);
+print len([1, 2, 3]);
+// Expected: 10, 50, 3

@@ -1,0 +1,13 @@
+// One closure captures two different enclosing locals
+fn make() {
+    let a = 3;
+    let b = 4;
+    fn sum() {
+        return a + b;
+    }
+    return sum;
+}
+
+let f = make();
+print f();
+// Expected: 7

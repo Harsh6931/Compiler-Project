@@ -1,0 +1,17 @@
+// Array as argument and return value (shared mutation)
+fn first(arr) {
+    return arr[0];
+}
+
+fn bump(arr) {
+    arr[0] = arr[0] + 10;
+    return arr;
+}
+
+let a = [5, 6];
+print first(a);
+let b = bump(a);
+print a[0];
+print b[0];
+print len(b);
+// Expected: 5, 15, 15, 2

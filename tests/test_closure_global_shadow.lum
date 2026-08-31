@@ -1,0 +1,17 @@
+// Global vs local: inner shadows do not clobber global; capture sees local
+let g = 100;
+
+fn make() {
+    let g = 1;
+    fn bump() {
+        g = g + 1;
+        return g;
+    }
+    return bump;
+}
+
+let f = make();
+print f();
+print f();
+print g;
+// Expected: 2, 3, 100

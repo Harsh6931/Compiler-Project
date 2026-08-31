@@ -1,0 +1,12 @@
+// Index with computed expression; nested assign
+let a = [10, 20, 30, 40];
+print a[1 + 1];
+let i = 0;
+a[i + 1] = 99;
+print a[1];
+
+let m = [[1, 2], [3, 4]];
+m[0][1] = 8;
+print m[0][1];
+print m[1][0];
+// Expected: 30, 99, 8, 3

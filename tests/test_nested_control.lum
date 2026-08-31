@@ -1,0 +1,28 @@
+// Nested if/while with locals and early return
+fn sumTo(n) {
+    let s = 0;
+    let i = 1;
+    while (i <= n) {
+        if (i == 3) {
+            s = s + 100;
+        } else {
+            s = s + i;
+        }
+        i = i + 1;
+    }
+    return s;
+}
+
+print sumTo(4);
+// 1+2+100+4 = 107
+
+fn early(n) {
+    if (n < 0) {
+        return 0;
+    }
+    return n * 2;
+}
+
+print early(-1);
+print early(5);
+// Expected: 107, 0, 10

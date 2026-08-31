@@ -1,0 +1,7 @@
+// Empty array literal and len
+let a = [];
+print len(a);
+let b = [1];
+print len(b);
+print b[0];
+// Expected: 0, 1, 1

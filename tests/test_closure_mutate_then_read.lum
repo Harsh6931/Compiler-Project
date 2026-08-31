@@ -1,0 +1,18 @@
+// Write via one capture path, read via another after outer returns
+fn make() {
+    let n = 10;
+    fn add(k) {
+        n = n + k;
+        return n;
+    }
+    fn show() {
+        return n;
+    }
+    return [add, show];
+}
+
+let p = make();
+print p[1]();
+print p[0](5);
+print p[1]();
+// Expected: 10, 15, 15
