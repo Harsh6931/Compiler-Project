@@ -1,0 +1,8 @@
+// Dead code after return must not run (interpreter) / not emit (compiler)
+fn f() {
+    return 42;
+    print 999;
+}
+
+print f();
+// Expected: 42
