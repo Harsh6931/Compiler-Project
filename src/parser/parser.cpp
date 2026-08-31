@@ -3,7 +3,10 @@
 
 #include "parser/parser.hpp"
 
-Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
+#include "util/error_format.hpp"
+
+Parser::Parser(const std::vector<Token>& tokens, std::string source)
+    : tokens(tokens), source(std::move(source)) {}
 
 Program Parser::parse() {
     Program program;
@@ -69,8 +72,9 @@ ParseError Parser::error(const Token& token, const std::string& message) {
     std::string where = token.type == TokenType::END_OF_FILE
                             ? "at end"
                             : "at '" + token.lexeme + "'";
-    return ParseError("Parse error at line " + std::to_string(token.line) +
-                      " " + where + ": " + message);
+    std::string prefix = "Parse error " + where;
+    return ParseError(
+        formatCaretError(source, token.line, token.column, prefix, message));
 }
 
 // --- statements ---

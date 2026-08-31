@@ -19,6 +19,7 @@ private:
     std::string source;
     size_t position;  // current position in the source code
     int line;  // current line number in the source code
+    int column;  // 1-based column of peek()
     std::vector<Token> tokens;
 
     // methods to tokenize the source code( defination is lexer.cpp)
@@ -30,8 +31,8 @@ private:
     void readNumber();
     void readString();
     void readIdentifier();
-    void addToken(TokenType type, const std::string& lexeme);
-    void error(const std::string& message);
+    void addToken(TokenType type, const std::string& lexeme, int startColumn);
+    void error(const std::string& message, int errorColumn);
 };
 
 #endif

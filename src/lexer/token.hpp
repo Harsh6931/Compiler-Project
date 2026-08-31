@@ -30,9 +30,13 @@ struct Token {
     TokenType type;
     std::string lexeme;
     int line;
+    int column;  // 1-based start column of the lexeme on that line
 
-    Token(TokenType type, std::string lexeme, int line)
-        : type(type), lexeme(std::move(lexeme)), line(line) {}
+    Token(TokenType type, std::string lexeme, int line, int column = 1)
+        : type(type),
+          lexeme(std::move(lexeme)),
+          line(line),
+          column(column) {}
 };
 
 inline std::string tokenTypeToString(TokenType type) {

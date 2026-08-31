@@ -23,12 +23,13 @@ public:
 // Statements: recursive descent. Expressions: Pratt / precedence climbing.
 class Parser {
 public:
-    explicit Parser(const std::vector<Token>& tokens);
+    Parser(const std::vector<Token>& tokens, std::string source);
 
     Program parse();
 
 private:
     const std::vector<Token>& tokens;
+    std::string source;
     size_t current = 0;
 
     // --- token helpers ---
