@@ -56,6 +56,10 @@ private:
     int resolveUpvalue(CompilerFunction* comp, const std::string& name);
     void namedVariable(const std::string& name, int line, bool assign);
 
+    // Compile a statement list; skip code after an unconditional return (DCE).
+    // Returns true if the list ends with a compiled return.
+    bool compileStatements(const std::vector<StmtPtr>& statements);
+
     void compileStmt(const Stmt& stmt);
     void compileExpr(const Expr& expr);
     void compileFunction(const FunctionDeclStmt& stmt);

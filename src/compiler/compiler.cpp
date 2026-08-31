@@ -13,15 +13,30 @@ std::shared_ptr<FunctionObject> Compiler::compile(const Program& program) {
     top.scopeDepth = 0;
     current = &top;
 
-    for (const auto& stmt : program.statements) {
-        compileStmt(*stmt);
+    bool endsWithReturn = compileStatements(program.statements);
+    if (!endsWithReturn) {
+        emitOp(OP_NIL, 0);
+        emitReturn(0);
     }
-
-    emitOp(OP_NIL, 0);
-    emitReturn(0);
 
     current = nullptr;
     return script;
+}
+
+bool Compiler::compileStatements(const std::vector<StmtPtr>& statements) {
+    bool unreachable = false;
+    bool sawReturn = false;
+    for (const auto& stmt : statements) {
+        if (unreachable) {
+            continue;  // dead code after return — do not emit
+        }
+        compileStmt(*stmt);
+        if (dynamic_cast<const ReturnStmt*>(stmt.get()) != nullptr) {
+            unreachable = true;
+            sawReturn = true;
+        }
+    }
+    return sawReturn;
 }
 
 Chunk& Compiler::chunk() {
@@ -173,9 +188,7 @@ void Compiler::compileStmt(const Stmt& stmt) {
 
     if (auto* s = dynamic_cast<const BlockStmt*>(&stmt)) {
         beginScope();
-        for (const auto& child : s->statements) {
-            compileStmt(*child);
-        }
+        compileStatements(s->statements);
         endScope(0);
         return;
     }
@@ -244,12 +257,11 @@ void Compiler::compileFunction(const FunctionDeclStmt& stmt) {
         addLocal(param);
     }
 
-    for (const auto& bodyStmt : stmt.body) {
-        compileStmt(*bodyStmt);
+    bool endsWithReturn = compileStatements(stmt.body);
+    if (!endsWithReturn) {
+        emitOp(OP_NIL, stmt.line);
+        emitReturn(stmt.line);
     }
-
-    emitOp(OP_NIL, stmt.line);
-    emitReturn(stmt.line);
 
     function->upvalues = nested.upvalues;
     current = enclosing;
