@@ -1,0 +1,16 @@
+// Inner let shadows outer x; capture still sees outer
+fn make() {
+    let x = 1;
+    fn inner() {
+        let x = 99;
+        return x;
+    }
+    fn getOuter() {
+        return x;
+    }
+    print inner();
+    print getOuter();
+}
+
+make();
+// Expected: 99, 1

@@ -1,0 +1,16 @@
+// Three-deep nesting: c captures a's local through b
+fn a() {
+    let x = 5;
+    fn b() {
+        fn c() {
+            return x;
+        }
+        return c;
+    }
+    return b;
+}
+
+let mid = a();
+let deep = mid();
+print deep();
+// Expected: 5

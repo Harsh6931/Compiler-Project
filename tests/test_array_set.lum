@@ -1,0 +1,7 @@
+// Index assign mutates shared array
+let a = [1, 2, 3];
+a[1] = 99;
+print a[0];
+print a[1];
+print a[2];
+// Expected: 1, 99, 3

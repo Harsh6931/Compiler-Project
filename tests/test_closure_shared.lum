@@ -1,0 +1,17 @@
+// Two nested fns share one captured i
+fn makePair() {
+    let i = 0;
+    fn inc() {
+        i = i + 1;
+        return i;
+    }
+    fn get() {
+        return i;
+    }
+    return inc;
+}
+
+let inc = makePair();
+print inc();
+print inc();
+// Expected: 1, 2
