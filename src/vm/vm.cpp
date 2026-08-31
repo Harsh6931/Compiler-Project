@@ -4,6 +4,10 @@
 
 #include <iostream>
 
+VM::VM() {
+    reset();
+}
+
 void VM::reset() {
     stackTop = stack;
     frameCount = 0;
@@ -114,7 +118,10 @@ InterpretResult VM::runtimeError(const std::string& message) {
         std::cerr << "Runtime error: " << message << "\n";
     }
 
-    reset();
+    // Soft reset: clear stack/frames but keep globals (needed for REPL).
+    stackTop = stack;
+    frameCount = 0;
+    openUpvalues.clear();
     return InterpretResult::RuntimeError;
 }
 
@@ -191,7 +198,9 @@ bool VM::callValue(ConstantValue callee, int argCount) {
 }
 
 InterpretResult VM::run(const std::shared_ptr<FunctionObject>& script) {
-    reset();
+    stackTop = stack;
+    frameCount = 0;
+    openUpvalues.clear();
 
     auto closure = std::make_shared<ObjClosure>();
     closure->function = script;

@@ -15,6 +15,13 @@ enum class InterpretResult {
 
 class VM {
 public:
+    VM();
+
+    // Clear stack/frames and re-init natives + empty globals.
+    void reset();
+
+    // Execute a script chunk. Does not clear globals (REPL-safe).
+    // Call reset() first for a fresh file run.
     InterpretResult run(const std::shared_ptr<FunctionObject>& script);
 
 private:
@@ -34,7 +41,6 @@ private:
     std::unordered_map<std::string, ConstantValue> globals;
     std::vector<std::shared_ptr<ObjUpvalue>> openUpvalues;
 
-    void reset();
     void push(ConstantValue value);
     ConstantValue pop();
     ConstantValue peek(int distance) const;
