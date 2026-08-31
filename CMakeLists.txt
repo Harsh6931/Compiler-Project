@@ -12,6 +12,9 @@ add_executable(lumen
     src/ast/ast_printer.cpp
     src/interpreter/environment.cpp
     src/interpreter/interpreter.cpp
+    src/compiler/chunk.cpp
+    src/compiler/compiler.cpp
+    src/compiler/disassembler.cpp
 )
 
 target_include_directories(lumen PRIVATE src)

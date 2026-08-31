@@ -5,7 +5,10 @@ SRC      := src/main.cpp \
            src/parser/parser.cpp \
            src/ast/ast_printer.cpp \
            src/interpreter/environment.cpp \
-           src/interpreter/interpreter.cpp
+           src/interpreter/interpreter.cpp \
+           src/compiler/chunk.cpp \
+           src/compiler/compiler.cpp \
+           src/compiler/disassembler.cpp
 TARGET   := lumen
 
 .PHONY: all clean run

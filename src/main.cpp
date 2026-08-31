@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "ast/ast_printer.hpp"
+#include "compiler/compiler.hpp"
+#include "compiler/disassembler.hpp"
 #include "interpreter/interpreter.hpp"
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
@@ -31,12 +33,13 @@ bool readSourceFile(const char* path, std::string& out) {
     return true;
 }
 
-// For tokenize/parse/run command 3 args mandatory
+// For tokenize/parse/run/disassemble command 3 args mandatory
 // other commands have 2+ -> not implemented yet
 // argc = arguent count (Number of command-line arguments passed to program.)
-// eg. /lumen tokenize test.lum -> argc = 3 argv[0] = "./lumen" argv[1] = "tokenize" argv[2] = "test.lum"
-// eg. /lumen parse test.lum    -> argc = 3 argv[0] = "./lumen" argv[1] = "parse"    argv[2] = "test.lum"
-// eg. /lumen run test.lum      -> argc = 3 argv[0] = "./lumen" argv[1] = "run"      argv[2] = "test.lum"
+// eg. /lumen tokenize test.lum    -> argc = 3 argv[0] = "./lumen" argv[1] = "tokenize"    argv[2] = "test.lum"
+// eg. /lumen parse test.lum       -> argc = 3 argv[0] = "./lumen" argv[1] = "parse"       argv[2] = "test.lum"
+// eg. /lumen run test.lum         -> argc = 3 argv[0] = "./lumen" argv[1] = "run"         argv[2] = "test.lum"
+// eg. /lumen disassemble test.lum -> argc = 3 argv[0] = "./lumen" argv[1] = "disassemble" argv[2] = "test.lum"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {   // if no arguments are provided, print usage
@@ -44,13 +47,15 @@ int main(int argc, char* argv[]) {
                   << "Usage:\n"
                   << "  lumen tokenize <file.lum>\n"
                   << "  lumen parse <file.lum>\n"
-                  << "  lumen run <file.lum>\n";
+                  << "  lumen run <file.lum>\n"
+                  << "  lumen disassemble <file.lum>\n";
         return 0;
     }
 
     std::string command = argv[1];
 
-    if (command == "tokenize" || command == "parse" || command == "run") {
+    if (command == "tokenize" || command == "parse" || command == "run" ||
+        command == "disassemble") {
         if (argc < 3) {
             std::cerr << "Error: Missing filename.\n";
             return 1;
@@ -81,7 +86,15 @@ int main(int argc, char* argv[]) {
                 return 0;
             }
 
-            // run: tree-walking interpreter executes the AST
+            if (command == "disassemble") {
+                // compile AST -> bytecode, then print opcodes (Stage 4)
+                Compiler compiler;
+                auto script = compiler.compile(program);
+                std::cout << disassembleFunction(*script);
+                return 0;
+            }
+
+            // run: tree-walking interpreter executes the AST (Stage 3)
             Interpreter interpreter;
             interpreter.interpret(program);
         } catch (const std::runtime_error& e) {
