@@ -28,8 +28,22 @@ Stack effects: `before → after` (top of stack on the right).
 |---|---|---|---|
 | `OP_GET_LOCAL` | 1-byte slot | `[] → [v]` | Push local at slot |
 | `OP_SET_LOCAL` | 1-byte slot | `[v] → [v]` | Set local at slot; leave value |
+| `OP_GET_UPVALUE` | 1-byte slot | `[] → [v]` | Push closed-over variable |
+| `OP_SET_UPVALUE` | 1-byte slot | `[v] → [v]` | Assign closed-over variable |
+| `OP_CLOSE_UPVALUE` | — | `[v] → []` | Close upvalue for stack top, then pop |
 
-Top-level script variables use globals. Inside functions, parameters occupy slots `0 .. arity-1`; further `let` bindings get higher slots. Closures/upvalues are out of scope for Stage 4.
+Top-level script variables use globals. Inside functions, parameters occupy slots `1 .. arity` (slot 0 is the callee). Captured locals become upvalues.
+
+## Closures and arrays
+
+| Opcode | Operands | Stack | Meaning |
+|---|---|---|---|
+| `OP_CLOSURE` | const idx + N×(isLocal,index) | `[] → [closure]` | Build closure from function proto |
+| `OP_BUILD_ARRAY` | 1-byte count | `[e0..eN] → [array]` | Build array from stack values |
+| `OP_INDEX_GET` | — | `[arr,i] → [v]` | Array element get |
+| `OP_INDEX_SET` | — | `[arr,i,v] → [v]` | Array element set |
+
+Builtin global `len(array)` is a native function (not an opcode).
 
 ## Arithmetic and comparison
 

@@ -4,7 +4,6 @@
 #include <sstream>
 
 namespace {
-
 // disassebler work = convert bytecode into human readable format.
 // eg. 
 int disassembleInstruction(const Chunk& chunk, int offset, std::ostringstream& out) {
@@ -31,11 +30,30 @@ int disassembleInstruction(const Chunk& chunk, int offset, std::ostringstream& o
         }
         case OP_GET_LOCAL:
         case OP_SET_LOCAL:
-        case OP_CALL: {
+        case OP_GET_UPVALUE:
+        case OP_SET_UPVALUE:
+        case OP_CALL:
+        case OP_BUILD_ARRAY: {
             uint8_t slot = chunk.code[offset + 1];
             out << std::left << std::setw(18) << opcodeName(op) << std::right
                 << " " << static_cast<int>(slot) << "\n";
             return offset + 2;
+        }
+        case OP_CLOSURE: {
+            uint8_t index = chunk.code[offset + 1];
+            out << std::left << std::setw(18) << opcodeName(op) << std::right
+                << " " << static_cast<int>(index) << " '"
+                << chunk.constants[index].toString() << "'\n";
+            offset += 2;
+            const auto& fn = chunk.constants[index].function;
+            for (size_t i = 0; i < fn->upvalues.size(); ++i) {
+                uint8_t isLocal = chunk.code[offset++];
+                uint8_t uvIndex = chunk.code[offset++];
+                out << "      |                     "
+                    << (isLocal ? "local " : "upvalue ")
+                    << static_cast<int>(uvIndex) << "\n";
+            }
+            return offset;
         }
         case OP_JUMP:
         case OP_JUMP_IF_FALSE: {
@@ -80,6 +98,7 @@ std::string disassembleChunk(const Chunk& chunk, const std::string& name) {
 
 std::string disassembleFunction(const FunctionObject& function) {
     std::string name = function.name.empty() ? "<script>" : function.name;
-    name += " (" + std::to_string(function.arity) + " params)";
+    name += " (" + std::to_string(function.arity) + " params, " +
+            std::to_string(function.upvalues.size()) + " upvalues)";
     return disassembleChunk(function.chunk, name);
 }
