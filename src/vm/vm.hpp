@@ -6,13 +6,13 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 enum class InterpretResult {
     Ok,
     RuntimeError,
 };
 
-// Stack-based virtual machine that executes compiled FunctionObject bytecode.
 class VM {
 public:
     InterpretResult run(const std::shared_ptr<FunctionObject>& script);
@@ -22,9 +22,9 @@ private:
     static constexpr int FRAMES_MAX = 64;
 
     struct CallFrame {
-        FunctionObject* function = nullptr;
+        std::shared_ptr<ObjClosure> closure;
         uint8_t* ip = nullptr;
-        ConstantValue* slots = nullptr;  // points into stack (frame base)
+        ConstantValue* slots = nullptr;
     };
 
     ConstantValue stack[STACK_MAX];
@@ -32,6 +32,7 @@ private:
     CallFrame frames[FRAMES_MAX];
     int frameCount = 0;
     std::unordered_map<std::string, ConstantValue> globals;
+    std::vector<std::shared_ptr<ObjUpvalue>> openUpvalues;
 
     void reset();
     void push(ConstantValue value);
@@ -40,7 +41,11 @@ private:
 
     InterpretResult runFrames();
     bool callValue(ConstantValue callee, int argCount);
-    bool call(FunctionObject* function, int argCount);
+    bool call(const std::shared_ptr<ObjClosure>& closure, int argCount);
+    bool callNative(NativeId id, int argCount);
+
+    std::shared_ptr<ObjUpvalue> captureUpvalue(ConstantValue* local);
+    void closeUpvalues(ConstantValue* last);
 
     uint8_t readByte(CallFrame* frame);
     uint16_t readShort(CallFrame* frame);
