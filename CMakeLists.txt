@@ -15,6 +15,7 @@ add_executable(lumen
     src/compiler/chunk.cpp
     src/compiler/compiler.cpp
     src/compiler/disassembler.cpp
+    src/vm/vm.cpp
 )
 
 target_include_directories(lumen PRIVATE src)
