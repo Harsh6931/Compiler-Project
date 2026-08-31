@@ -10,6 +10,7 @@
 #include "interpreter/interpreter.hpp"
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
+#include "vm/vm.hpp"
 
 // My entry point for the compiler, it call Lexer,parser and parses CLI arguments.
 
@@ -33,12 +34,13 @@ bool readSourceFile(const char* path, std::string& out) {
     return true;
 }
 
-// For tokenize/parse/run/disassemble command 3 args mandatory
+// For tokenize/parse/run/interpret/disassemble command 3 args mandatory
 // other commands have 2+ -> not implemented yet
 // argc = arguent count (Number of command-line arguments passed to program.)
 // eg. /lumen tokenize test.lum    -> argc = 3 argv[0] = "./lumen" argv[1] = "tokenize"    argv[2] = "test.lum"
 // eg. /lumen parse test.lum       -> argc = 3 argv[0] = "./lumen" argv[1] = "parse"       argv[2] = "test.lum"
 // eg. /lumen run test.lum         -> argc = 3 argv[0] = "./lumen" argv[1] = "run"         argv[2] = "test.lum"
+// eg. /lumen interpret test.lum   -> argc = 3 argv[0] = "./lumen" argv[1] = "interpret"   argv[2] = "test.lum"
 // eg. /lumen disassemble test.lum -> argc = 3 argv[0] = "./lumen" argv[1] = "disassemble" argv[2] = "test.lum"
 
 int main(int argc, char* argv[]) {
@@ -48,6 +50,7 @@ int main(int argc, char* argv[]) {
                   << "  lumen tokenize <file.lum>\n"
                   << "  lumen parse <file.lum>\n"
                   << "  lumen run <file.lum>\n"
+                  << "  lumen interpret <file.lum>\n"
                   << "  lumen disassemble <file.lum>\n";
         return 0;
     }
@@ -55,7 +58,7 @@ int main(int argc, char* argv[]) {
     std::string command = argv[1];
 
     if (command == "tokenize" || command == "parse" || command == "run" ||
-        command == "disassemble") {
+        command == "interpret" || command == "disassemble") {
         if (argc < 3) {
             std::cerr << "Error: Missing filename.\n";
             return 1;
@@ -94,9 +97,20 @@ int main(int argc, char* argv[]) {
                 return 0;
             }
 
-            // run: tree-walking interpreter executes the AST (Stage 3)
-            Interpreter interpreter;
-            interpreter.interpret(program);
+            if (command == "interpret") {
+                // Stage 3 tree-walking interpreter (correctness oracle)
+                Interpreter interpreter;
+                interpreter.interpret(program);
+                return 0;
+            }
+
+            // run: compile AST -> bytecode, then execute on the VM (Stage 5)
+            Compiler compiler;
+            auto script = compiler.compile(program);
+            VM vm;
+            if (vm.run(script) != InterpretResult::Ok) {
+                return 1;
+            }
         } catch (const std::runtime_error& e) {
             std::cerr << e.what() << "\n";
             return 1;
