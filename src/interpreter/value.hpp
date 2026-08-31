@@ -5,26 +5,26 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 class Environment;
 
+enum class InterpNativeId { Len };
+
 // Runtime value used by the tree-walking interpreter.
 struct Value {
-    enum class Type { Nil, Number, Boolean, String, Function };
+    enum class Type { Nil, Number, Boolean, String, Function, Array, Native };
 
     Type type = Type::Nil;
     long long number = 0;
     bool boolean = false;
     std::string string;
-
-    // Function values: declaration lives in the AST; closure is the env
-    // where the function was defined (for looking up enclosing names).
     const FunctionDeclStmt* declaration = nullptr;
     std::shared_ptr<Environment> closure;
+    std::shared_ptr<std::vector<Value>> array;
+    InterpNativeId nativeId = InterpNativeId::Len;
 
-    static Value makeNil() {
-        return Value{};
-    }
+    static Value makeNil() { return Value{}; }
 
     static Value makeNumber(long long n) {
         Value v;
@@ -56,6 +56,20 @@ struct Value {
         return v;
     }
 
+    static Value makeArray(std::shared_ptr<std::vector<Value>> elements) {
+        Value v;
+        v.type = Type::Array;
+        v.array = std::move(elements);
+        return v;
+    }
+
+    static Value makeNative(InterpNativeId id) {
+        Value v;
+        v.type = Type::Native;
+        v.nativeId = id;
+        return v;
+    }
+
     bool isTruthy() const {
         if (type == Type::Nil) {
             return false;
@@ -78,6 +92,17 @@ struct Value {
                 return string;
             case Type::Function:
                 return "<fn " + declaration->name + ">";
+            case Type::Array: {
+                std::string out = "[";
+                for (size_t i = 0; i < array->size(); ++i) {
+                    if (i > 0) out += ", ";
+                    out += (*array)[i].toString();
+                }
+                out += "]";
+                return out;
+            }
+            case Type::Native:
+                return "<native fn>";
         }
         return "nil";
     }
